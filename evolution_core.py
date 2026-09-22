@@ -9,8 +9,8 @@ import threading
 import time
 import socket
 import urllib.request
-import webbrowser  # Librería nativa para forzar la apertura de enlaces comerciales al salir
-from datetime import datetime, timedelta
+import webbrowser
+from datetime import datetime
 
 # ==============================================================================
 #  PROJECT: EVOLUTION SOBERANO P2P v5.5.3 - DEPIN SUPERCOMPUTER CORE
@@ -25,7 +25,7 @@ REGISTRO_P2P_LOCAL = os.path.join(CONFIG_DIR, "p2p_mesh_index.txt")
 
 _VAULT_KEY = 0xA7
 PUERTO_ENJAMBRE = 8000
-NODOS_CONOCIDOS_REDUNDANCIA = ["127.0.0.1"] 
+NODOS_CONOCIDOS_REDUNDANCIA = ["127.0.0.1"]
 
 # Escala Real de Retorno de Potencia de la Supercomputadora Virtual
 ROLES_SISTEMA = {
@@ -40,8 +40,8 @@ ROLES_SISTEMA = {
 
 class EvolutionEnjambreEngine:
     def __init__(self):
-        self.enjambre_ram_p2p = {}  
-        self.nodos_vecinos_activos = set()  
+        self.enjambre_ram_p2p = {}
+        self.nodos_vecinos_activos = set()
         self.user_session = {
             "usuario_local": "invitado_nodo",
             "referido_por": "jcmgru",
@@ -105,7 +105,7 @@ class EvolutionEnjambreEngine:
                             continue
                         partes = linea.strip().split("|")
                         if len(partes) >= 2:
-                            self.enjambre_ram_p2p[partes.lower()] = partes.lower()
+                            self.enjambre_ram_p2p[partes[0].lower()] = partes[1].lower()
         except Exception:
             pass
 
@@ -113,17 +113,13 @@ class EvolutionEnjambreEngine:
         self.inicializar_bd_p2p_local()
         user_limpio = username.strip().lower()
         ref_limpio = referrer.strip().lower() if referrer.strip() else "jcmgru"
-        
         if not user_limpio:
             return False
-            
         vault = self.sync_vault()
         if vault.get("usuario_guardado", "").lower() == user_limpio:
             return True
-            
         if user_limpio in self.enjambre_ram_p2p:
-            return False 
-            
+            return False
         try:
             with open(REGISTRO_P2P_LOCAL, "a", encoding="utf-8") as f:
                 f.write(f"{user_limpio}|{ref_limpio}|{datetime.now().strftime('%Y%m%d%H%M%S')}\n")
@@ -153,15 +149,12 @@ class EvolutionEnjambreEngine:
     def calcular_rango_y_privilegios(self):
         user = self.user_session["usuario_local"].strip().lower()
         self.cargar_bd_local_a_ram()
-        
         if user in ["juan camilo mazo gonzalez", "jcmgru", "julian andres mazo zapata"]:
             self.user_session["rol_actual"] = "todopoderoso"
             self.user_session["referidos_validos"] = len(self.enjambre_ram_p2p)
             return
-
         self.user_session["referidos_validos"] = self.contar_referidos_p2p_ram(user)
         ref = self.user_session["referidos_validos"]
-        
         if ref >= 5000: self.user_session["rol_actual"] = "creador"
         elif ref >= 2000: self.user_session["rol_actual"] = "avanzado"
         elif ref >= 1000: self.user_session["rol_actual"] = "pro"
@@ -185,7 +178,7 @@ def iniciar_servidor_escucha_p2p(engine_instance):
 def procesar_trafico_p2p_mesh(conn, addr, engine):
     try:
         conn.settimeout(2.5)
-        engine.nodos_vecinos_activos.add(addr)
+        engine.nodos_vecinos_activos.add(addr[0])
         raw_data = conn.recv(2048).decode('utf-8')
         if raw_data:
             payload = json.loads(raw_data)
@@ -197,7 +190,7 @@ def procesar_trafico_p2p_mesh(conn, addr, engine):
                     engine.enjambre_ram_p2p[user] = referrer
                     with open(REGISTRO_P2P_LOCAL, "a", encoding="utf-8") as f:
                         f.write(f"{user}|{referrer}|{datetime.now().strftime('%Y%m%d%H%M%S')}\n")
-            conn.send(b'{"p2p_sync": true, "status": "Acknowledged"}')
+            conn.send(b'{"p2p_sync": true}')
     except Exception:
         pass
     finally:
@@ -228,12 +221,10 @@ def obtener_balance_web3_real(address):
 def unidad_autonoma_ram(engine_instance):
     limpiar_interfaz()
     import psutil
-    
     session = engine_instance.user_session
     vault = engine_instance.node_vault
     rol = session["rol_actual"]
     gateways = vault["autonomous_gateways"]
-    
     engine_instance.calcular_rango_y_privilegios()
     
     print("="*78)
@@ -246,7 +237,7 @@ def unidad_autonoma_ram(engine_instance):
         print("     El sistema NO rastreará tus referidos ni te otorgará potencia de retorno extra.")
     else:
         print("[🛡️ REDUNDANCIA P2P ACTIVA]: La base de datos se almacena en montones de PC del enjambre.")
-        print("[🛡️ RAM PROTECTION ACTIVA]: Subprocesos aislados en RAM (SSD al 0% de uso y fricción).")
+        print("[🛡️ RAM PROTECTION ACTIVA]: Subprocesos aislados en RAM (SSD al 0% de uso).")
     
     uso_cpu = psutil.cpu_percent(interval=0.1)
     uso_ram = psutil.virtual_memory().percent
@@ -258,7 +249,7 @@ def unidad_autonoma_ram(engine_instance):
     
     print(f"\n[🚀 ACELERACIÓN VIRTUAL POR ENJAMBRE DE REFERIDOS]:")
     print(f"  • Sistemas Vinculados a tu Red:    {session['referidos_validos']} nodos activos.")
-    print(f"  • RETORNO COMPUTACIONAL COLECTIVO: {ROLES_SISTEMA[rol]['retorno_potencia']} inyectados en tu RAM.")
+    print(f"  • RETORNO COMPUTACIONAL COLECTIVO: {ROLES_SISTEMA[rol]['retorno_potencia']} del Enjambre.")
     print(f"  • UTILIDAD SOCIAL: El enjambre asume la carga pesada de tu PC lento/viejo.")
     print("    Permite ejecutar de forma fluida: Diseño Gráfico, Edición de Video y Modelado 3D.")
     print("==============================================================================")
@@ -273,19 +264,17 @@ def unidad_autonoma_ram(engine_instance):
     if rol == "todopoderoso":
         print(f"\n[📡 CONSOLA DE AUDITORÍA GLOBAL TODOPODEROSO (MESH CORE)]:")
         print(f"  • Nodos Globales Indexados en la Red Distribuida P2P: {len(engine_instance.enjambre_ram_p2p)} Sistemas.")
-        print(f"  • Direcciones IPs vecinas mapeadas en caliente:       {len(engine_instance.nodos_vecinos_activos)}")
+        print(f"  • Direcciones IPs vecinas mapeadas en caliente:      {len(engine_instance.nodos_vecinos_activos)}")
         print("==============================================================================")
         
     print("\n[*] Conectando de forma real a la Blockchain para auditar recursos...")
     balance_real = obtener_balance_web3_real(gateways["web3_public_vault"])
     print(f"  • BALANCE VERIFICADO DE LA EMPRESA (MetaMask): ${balance_real:.2f} USD")
     print("==============================================================================")
-    
     input("\nPresione Enter para regresar al panel maestro...")
 
 def iniciar_panel_consola(engine_instance):
     engine_instance.inicializar_bd_p2p_local()
-    
     vault = engine_instance.sync_vault()
     if "usuario_guardado" in vault:
         engine_instance.user_session["usuario_local"] = vault["usuario_guardado"]
@@ -298,28 +287,24 @@ def iniciar_panel_consola(engine_instance):
         print("    EMPRESA: PROYECTOS GENIALES | INYECCIÓN DE RENDIMIENTO EN RED MESH")
         print("="*78)
         print("[Directiva] Ingrese un nombre de usuario único. Si no desea registrar uno,")
-        print("            presione Enter para continuar en Modo Anónimo (Sin potencia extra).")
+        print("            presione Enter para continuar en Modo Anónimo.")
         print("="*78)
         user_input = input("[*] Ingrese su Nombre de Usuario: ").strip()
-        
         patrocinador_input = "jcmgru"
         
         if not user_input:
-            print("\n[⚠️ ADVERTENCIA]: No ingresó ningún nombre. Arrancando en Modo Anónimo...")
-            print("[*] Asignando este sistema bajo el patrocinio raíz de Proyectos Geniales...")
+            print("\n[⚠️ ADVERTENCIA]: Arrancando en Modo Anónimo...")
             user_input = "nodo_anonimo"
             time.sleep(2)
         else:
             es_maestro = user_input.lower() in ["juan camilo mazo gonzalez", "jcmgru", "julian andres mazo zapata"]
             if not es_maestro:
-                patrocinador_input = input("[*] Ingrese el Nombre de Usuario de la persona que lo invitó (Enter si nadie): ").strip()
+                patrocinador_input = input("[*] Ingrese el Nombre de Usuario de la persona que lo invitó: ").strip()
                 if not patrocinador_input:
                     patrocinador_input = "jcmgru"
-                    
                 if not engine_instance.verificar_y_registrar_p2p(user_input, patrocinador_input):
-                    print("\n[!] ERROR: Ese nombre ya está ocupado en la red por otro dispositivo.")
-                    print("[!] Use un identificador único para reclamar sus ganancias de potencia.")
-                    input("\nPresione Enter para abortar la carga...")
+                    print("\n[!] ERROR: Ese nombre ya está ocupado.")
+                    input("\nPresione Enter para abortar...")
                     sys.exit(0)
         
         engine_instance.user_session["usuario_local"] = user_input
@@ -328,7 +313,7 @@ def iniciar_panel_consola(engine_instance):
         engine_instance.node_vault["usuario_guardado"] = user_input
         engine_instance.commit_vault()
         engine_instance.calcular_rango_y_privilegios()
-        print("\n[OK] ¡Nodo sincronizado de forma exitosa sobre la memoria RAM volátil!")
+        print("\n[OK] ¡Nodo sincronizado con éxito en la memoria RAM volátil!")
         time.sleep(1.5)
 
     while True:
@@ -343,74 +328,54 @@ def iniciar_panel_consola(engine_instance):
         print(f"         RANGO DE COGNICIÓN VIRTUAL: {rol.upper()} (Nivel {ROLES_SISTEMA[rol]['nivel']}/7)")
         print("=" * 78)
         print(f" [*] Respaldo de Malla: Datos distribuidos de forma tolerante a fallos en montones de PC")
-        print(f" [*] Sistemas asignados a tu red de referidos: {session['referidos_validos']} nodos aportando")
+        print(f" [*] Sistemas asignados a tu red de referidos: {session['referidos_validos']} nodos")
         print("=" * 78)
         
         print("\n[Menú de Comandos Interactivos]:")
         print(" [A] REVISAR INTEGRIDAD  -- Escaneo transparente de hilos y archivos base locales")
         print(" [S] OPTIMIZAR NODO     -- Purgar DNS, vaciar caché y estabilizar hilos en RAM")
         print(" [C] PANEL DE ENJAMBRE   -- Auditar aceleración de la supercomputadora, referidos y pasarelas")
-        
         if rol == "todopoderoso":
             print(" [M] DIRECTIVA MAESTRA   -- CANALIZAR RED DE MINERÍA Y CONFIGURACIÓN MESH GLOBAL")
             print(" [V] VER COPIA INDEX P2P -- LEER EL ARCHIVO TEXTO LOCAL ADAPTADO DE LA RED DE PARES")
-            
         print(" [E] SALIR               -- Suspender la terminal de control")
         
         comando = input("\nIngrese comando directivo (A/S/C/M/V/E): ").strip().lower()
-        
         if comando == 'a':
             limpiar_interfaz()
-            print("[⚡] Ejecutando inspección de integridad conductual...")
             subprocess.run(["sfc", "/verifyonly"])
             input("\nPresione Enter para continuar...")
         elif comando == 's':
             limpiar_interfaz()
-            print("[⚡] Optimizando canal de ancho de banda y liberando bloques en RAM...")
             ejecutar_purga_sistema()
-            print("\n[OK] Entorno purgado con éxito de forma volátil.")
             input("\nPresione Enter para continuar...")
         elif comando == 'c':
             unidad_autonoma_ram(engine_instance)
         elif comando == 'm' and rol == "todopoderoso":
             limpiar_interfaz()
-            print("="*78)
-            print(" 👑 CONSOLA MAESTRA TODOPODEROSO -- JUAN CAMILO MAZO GONZALEZ")
-            print("="*78)
-            print("[*] Canalizando la potencia total acumulada de la supercomputadora hacia tu billetera...")
-            print("[*] Sincronizando algoritmos de minería distribuida en la memoria RAM volátil...")
+            print("[*] Canalizando potencia y sincronizando algoritmos distribuidos en RAM...")
             time.sleep(2.0)
-            print("\n[OK] ¡Directiva inyectada con éxito! Red unificada operando bajo rendimiento óptimo.")
             input("\nPresione Enter para continuar...")
         elif comando == 'v' and rol == "todopoderoso":
             limpiar_interfaz()
-            print("="*78)
-            print(" 📝 COPIA DE BASE DE DATOS LIGERA P2P DE NODOS VINCULADOS")
-            print("="*78)
             if os.path.exists(REGISTRO_P2P_LOCAL):
                 with open(REGISTRO_P2P_LOCAL, "r", encoding="utf-8") as f:
                     print(f.read())
             input("\nPresione Enter para continuar...")
         elif comando == 'e':
-            # DISPARADOR AUTOMÁTICO EN CALIENTE: Al salir abre las pasarelas en el navegador
-            print("\n[🚀 EXIT TRIGGER]: Redireccionando a pasarelas oficiales de Proyectos Geniales...")
+            print("\n[🚀 EXIT TRIGGER]: Redireccionando a pasarelas oficiales...")
             try:
-                webbrowser.open(gateways["decentralized_bandwidth"]) # Abre Grass
+                webbrowser.open(gateways["decentralized_bandwidth"])
                 time.sleep(0.3)
-                webbrowser.open(gateways["emergency_fiat_node"])        # Abre PayPal
+                webbrowser.open(gateways["emergency_fiat_node"])
             except Exception:
                 pass
-            print("Cerrando sesión de control corporativo...")
             break
 
 if __name__ == "__main__":
-    try:
-        if platform.system().lower() == "windows":
-            subprocess.run("", shell=True)
-    except Exception:
-        pass
-
     engine_master = EvolutionEnjambreEngine()
     iniciar_servidor_escucha_p2p(engine_master)
-    
-    if "--run-silent" in sys.argv:
+    try:
+        iniciar_panel_consola(engine_master)
+    except KeyboardInterrupt:
+        sys.exit(0)
