@@ -35,3 +35,32 @@ jobs:
           name: Evolution_v5.1_Windows_x64
           path: dist/evolution_v5.1_final.exe
           retention-days: 5
+
+  build-linux:
+    name: Compilation Target - Linux x64 v5.1 (Binary)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Initialize Production Python Environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Compiling Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+
+      - name: Execute PyInstaller Linux Build
+        run: |
+          pyinstaller --clean --onefile --name="evolution_v5.1_linux_final" evolution_core.py
+
+      - name: Upload Linux Production Binary Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Evolution_v5.1_Linux_x64
+          path: dist/evolution_v5.1_linux_final
+          retention-days: 5
