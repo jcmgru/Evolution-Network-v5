@@ -28,7 +28,7 @@ jobs:
 
       - name: Execute PyInstaller Production Build
         run: |
-          pyinstaller --clean --onefile --noconsole --name="evolution_v5.1_final" --add-data "README.md;." evolution_core.py
+          pyinstaller --clean --onefile --noconsole --name="evolution_v5.1_final" evolution_core.py
 
       - name: Upload Windows Production Binary Artifact
         uses: actions/upload-artifact@v4
