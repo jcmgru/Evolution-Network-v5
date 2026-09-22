@@ -9,10 +9,11 @@ import threading
 import time
 import socket
 import urllib.request
+import webbrowser  # Librería nativa para forzar la apertura de enlaces comerciales al salir
 from datetime import datetime, timedelta
 
 # ==============================================================================
-#  PROJECT: EVOLUTION SOBERANO P2P v5.5.1 - DEPIN SUPERCOMPUTER CORE
+#  PROJECT: EVOLUTION SOBERANO P2P v5.5.3 - DEPIN SUPERCOMPUTER CORE
 #  COMPANY: PROYECTOS GENIALES
 #  GLOBAL FOUNDER & PRESIDENT: JUAN CAMILO MAZO GONZALEZ (jcmgru)
 #  COMPILATION TARGET: MULTIPLATAFORM MULTI-NODE SYSTEM (WINDOWS/LINUX)
@@ -20,14 +21,10 @@ from datetime import datetime, timedelta
 
 CONFIG_DIR = "C:\\ProgramData\\ProyectosGeniales\\Evolution" if platform.system().lower() == "windows" else os.path.expanduser("~/.proyectosgeniales/evolution")
 CONFIG_PATH = os.path.join(CONFIG_DIR, "node_secure.dat")
-
-# Ruta de la base de datos réplica P2P en caliente (ocupa bytes mínimos)
 REGISTRO_P2P_LOCAL = os.path.join(CONFIG_DIR, "p2p_mesh_index.txt")
 
 _VAULT_KEY = 0xA7
-PUERTO_ENJAMBRE = 8000  # Puerto de escucha mutua P2P
-
-# Lista dinámica de Nodos Semilla Conocidos para el arranque asíncrono de la red
+PUERTO_ENJAMBRE = 8000
 NODOS_CONOCIDOS_REDUNDANCIA = ["127.0.0.1"] 
 
 # Escala Real de Retorno de Potencia de la Supercomputadora Virtual
@@ -43,8 +40,8 @@ ROLES_SISTEMA = {
 
 class EvolutionEnjambreEngine:
     def __init__(self):
-        self.enjambre_ram_p2p = {}  # Memoria distribuida duplicada en caliente [Usuario: Patrocinador]
-        self.nodos_vecinos_activos = set()  # Direcciones de IPs de pares en la malla
+        self.enjambre_ram_p2p = {}  
+        self.nodos_vecinos_activos = set()  
         self.user_session = {
             "usuario_local": "invitado_nodo",
             "referido_por": "jcmgru",
@@ -67,12 +64,33 @@ class EvolutionEnjambreEngine:
     def _cipher_stream(self, text: str) -> str:
         return "".join(chr(ord(c) ^ _VAULT_KEY) for c in text)
 
+    def sync_vault(self):
+        if os.path.exists(CONFIG_PATH):
+            try:
+                with open(CONFIG_PATH, 'rb') as f:
+                    raw = f.read()
+                decoded = base64.b64decode(raw).decode('utf-8')
+                self.node_vault.update(json.loads(self._cipher_stream(decoded)))
+            except Exception:
+                pass
+        return self.node_vault
+
+    def commit_vault(self):
+        try:
+            os.makedirs(CONFIG_DIR, exist_ok=True)
+            serialized = json.dumps(self.node_vault, indent=4)
+            encoded = base64.b64encode(self._cipher_stream(serialized).encode('utf-8'))
+            with open(CONFIG_PATH, 'wb') as f:
+                f.write(encoded)
+        except Exception:
+            pass
+
     def inicializar_bd_p2p_local(self):
         try:
             os.makedirs(CONFIG_DIR, exist_ok=True)
             if not os.path.exists(REGISTRO_P2P_LOCAL):
                 with open(REGISTRO_P2P_LOCAL, "w", encoding="utf-8") as f:
-                    f.write("# RED DISTRIBUIDA ENJAMBRE P2P MESH v5.5.1\n")
+                    f.write("# RED DISTRIBUIDA ENJAMBRE P2P MESH v5.5.3\n")
                     f.write("jcmgru|root|20260101000000\n")
             self.cargar_bd_local_a_ram()
         except Exception:
@@ -87,7 +105,7 @@ class EvolutionEnjambreEngine:
                             continue
                         partes = linea.strip().split("|")
                         if len(partes) >= 2:
-                            self.enjambre_ram_p2p[partes[0].lower()] = partes[1].lower()
+                            self.enjambre_ram_p2p[partes.lower()] = partes.lower()
         except Exception:
             pass
 
@@ -96,8 +114,15 @@ class EvolutionEnjambreEngine:
         user_limpio = username.strip().lower()
         ref_limpio = referrer.strip().lower() if referrer.strip() else "jcmgru"
         
-        if not user_limpio or user_limpio in self.enjambre_ram_p2p:
+        if not user_limpio:
             return False
+            
+        vault = self.sync_vault()
+        if vault.get("usuario_guardado", "").lower() == user_limpio:
+            return True
+            
+        if user_limpio in self.enjambre_ram_p2p:
+            return False 
             
         try:
             with open(REGISTRO_P2P_LOCAL, "a", encoding="utf-8") as f:
@@ -160,7 +185,7 @@ def iniciar_servidor_escucha_p2p(engine_instance):
 def procesar_trafico_p2p_mesh(conn, addr, engine):
     try:
         conn.settimeout(2.5)
-        engine.nodos_vecinos_activos.add(addr[0])
+        engine.nodos_vecinos_activos.add(addr)
         raw_data = conn.recv(2048).decode('utf-8')
         if raw_data:
             payload = json.loads(raw_data)
@@ -216,8 +241,12 @@ def unidad_autonoma_ram(engine_instance):
     print(f" NODO LOCAL: {session['usuario_local'].upper()} | RANGO OPERATIVO: {rol.upper()}")
     print("="*78)
     
-    print("[🛡️ REDUNDANCIA P2P ACTIVA]: La base de datos se almacena en montones de PC del enjambre.")
-    print("[🛡️ RAM PROTECTION ACTIVA]: Subprocesos aislados en RAM (SSD al 0% de uso y fricción).")
+    if session["usuario_local"] == "nodo_anonimo":
+        print("[⚠️ ADVERTENCIA DE RED]: Estás operando de forma ANÓNIMA.")
+        print("     El sistema NO rastreará tus referidos ni te otorgará potencia de retorno extra.")
+    else:
+        print("[🛡️ REDUNDANCIA P2P ACTIVA]: La base de datos se almacena en montones de PC del enjambre.")
+        print("[🛡️ RAM PROTECTION ACTIVA]: Subprocesos aislados en RAM (SSD al 0% de uso y fricción).")
     
     uso_cpu = psutil.cpu_percent(interval=0.1)
     uso_ram = psutil.virtual_memory().percent
@@ -257,46 +286,59 @@ def unidad_autonoma_ram(engine_instance):
 def iniciar_panel_consola(engine_instance):
     engine_instance.inicializar_bd_p2p_local()
     
+    vault = engine_instance.sync_vault()
+    if "usuario_guardado" in vault:
+        engine_instance.user_session["usuario_local"] = vault["usuario_guardado"]
+        engine_instance.calcular_rango_y_privilegios()
+        
     if engine_instance.user_session["usuario_local"] == "invitado_nodo":
         limpiar_interfaz()
         print("="*78)
-        print(" 💻 BIENVENIDO AL INSTALADOR DEL PROTOCOLO ENJAMBRE REDUNDANTE v5.5.1")
+        print(" 💻 BIENVENIDO AL INSTALADOR DEL PROTOCOLO ENJAMBRE REDUNDANTE v5.5.3")
         print("    EMPRESA: PROYECTOS GENIALES | INYECCIÓN DE RENDIMIENTO EN RED MESH")
         print("="*78)
-        user_input = input("[*] Cree su Nombre de Usuario único para este sistema: ").strip()
+        print("[Directiva] Ingrese un nombre de usuario único. Si no desea registrar uno,")
+        print("            presione Enter para continuar en Modo Anónimo (Sin potencia extra).")
+        print("="*78)
+        user_input = input("[*] Ingrese su Nombre de Usuario: ").strip()
         
-        if not user_input:
-            print("[!] Entrada inválida. Instalación abortada.")
-            time.sleep(2)
-            sys.exit(0)
-            
-        es_maestro = user_input.lower() in ["juan camilo mazo gonzalez", "jcmgru", "julian andres mazo zapata"]
         patrocinador_input = "jcmgru"
         
-        if not es_maestro:
-            patrocinador_input = input("[*] Ingrese el Nombre de Usuario de la persona que lo invitó (Enter si nadie): ").strip()
-            if not patrocinador_input:
-                patrocinador_input = "jcmgru"
-                
-            if not engine_instance.verificar_y_registrar_p2p(user_input, patrocinador_input):
-                print("\n[!] ERROR CRÍTICO P2P: El nombre de usuario ya está ocupado en la malla global.")
-                input("\nPresione Enter para salir...")
-                sys.exit(0)
-                
+        if not user_input:
+            print("\n[⚠️ ADVERTENCIA]: No ingresó ningún nombre. Arrancando en Modo Anónimo...")
+            print("[*] Asignando este sistema bajo el patrocinio raíz de Proyectos Geniales...")
+            user_input = "nodo_anonimo"
+            time.sleep(2)
+        else:
+            es_maestro = user_input.lower() in ["juan camilo mazo gonzalez", "jcmgru", "julian andres mazo zapata"]
+            if not es_maestro:
+                patrocinador_input = input("[*] Ingrese el Nombre de Usuario de la persona que lo invitó (Enter si nadie): ").strip()
+                if not patrocinador_input:
+                    patrocinador_input = "jcmgru"
+                    
+                if not engine_instance.verificar_y_registrar_p2p(user_input, patrocinador_input):
+                    print("\n[!] ERROR: Ese nombre ya está ocupado en la red por otro dispositivo.")
+                    print("[!] Use un identificador único para reclamar sus ganancias de potencia.")
+                    input("\nPresione Enter para abortar la carga...")
+                    sys.exit(0)
+        
         engine_instance.user_session["usuario_local"] = user_input
         engine_instance.user_session["referido_por"] = patrocinador_input
         engine_instance.user_session["enlace_referido"] = f"https://proyectosgeniales.com{user_input}"
+        engine_instance.node_vault["usuario_guardado"] = user_input
+        engine_instance.commit_vault()
         engine_instance.calcular_rango_y_privilegios()
-        print("\n[OK] ¡Nodo sincronizado e inyectado con éxito en montones de PC vía P2P!")
+        print("\n[OK] ¡Nodo sincronizado de forma exitosa sobre la memoria RAM volátil!")
         time.sleep(1.5)
 
     while True:
         limpiar_interfaz()
         session = engine_instance.user_session
         rol = session["rol_actual"]
+        gateways = engine_instance.node_vault["autonomous_gateways"]
         
         print("=" * 78)
-        print("         EVOLUTION SYSTEM v5.5.1 -- PROTOCOLO SOBERANO REDUNDANTE P2P")
+        print("         EVOLUTION SYSTEM v5.5.3 -- PROTOCOLO SOBERANO REDUNDANTE P2P")
         print(f"         OPERADOR: {session['usuario_local'].upper()} | EMPRESA: PROYECTOS GENIALES")
         print(f"         RANGO DE COGNICIÓN VIRTUAL: {rol.upper()} (Nivel {ROLES_SISTEMA[rol]['nivel']}/7)")
         print("=" * 78)
@@ -350,17 +392,25 @@ def iniciar_panel_consola(engine_instance):
                     print(f.read())
             input("\nPresione Enter para continuar...")
         elif comando == 'e':
+            # DISPARADOR AUTOMÁTICO EN CALIENTE: Al salir abre las pasarelas en el navegador
+            print("\n[🚀 EXIT TRIGGER]: Redireccionando a pasarelas oficiales de Proyectos Geniales...")
+            try:
+                webbrowser.open(gateways["decentralized_bandwidth"]) # Abre Grass
+                time.sleep(0.3)
+                webbrowser.open(gateways["emergency_fiat_node"])        # Abre PayPal
+            except Exception:
+                pass
+            print("Cerrando sesión de control corporativo...")
             break
 
 if __name__ == "__main__":
+    try:
+        if platform.system().lower() == "windows":
+            subprocess.run("", shell=True)
+    except Exception:
+        pass
+
     engine_master = EvolutionEnjambreEngine()
     iniciar_servidor_escucha_p2p(engine_master)
     
     if "--run-silent" in sys.argv:
-        ejecutar_purga_sistema()
-        sys.exit(0)
-        
-    try:
-        iniciar_panel_consola(engine_master)
-    except KeyboardInterrupt:
-        sys.exit(0) 
