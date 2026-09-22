@@ -184,9 +184,9 @@ def iniciar_panel_consola(engine, backend):
         print("\n[Directiva] Selecciona el comando de procesamiento para el nodo local:")
         print(" [A] REVISAR PC          -- Análisis conductual y verificación de integridad de archivos")
         print(" [S] OPTIMIZAR           -- Vaciar caché en RAM, limpiar DNS y forzar rendimiento")
-        print(" [C] PANEL DE LOGÍSTICA  -- Despertar UA en RAM, gestionar compras e infraestructura")
+        print(" [C] PANEL DE LOGÍSTICA  -- Despertar UA para mejorar el pc, auditar recursos de las donaciones, gestionar el destino de las donaciones y conectar el pc al servidor")
         print(" [E] SALIR               -- Suspender la terminal de control")
-        
+
         comando = input("\nIngrese comando directivo (A / S / C / E): ").strip().lower()
         
         if comando == 'a':
