@@ -13,13 +13,11 @@ import webbrowser
 from datetime import datetime
 
 # ==============================================================================
-#  PROJECT: EVOLUTION MULTIPLATAFORM TOTAL v5.6 - DEPIN SUPERCOMPUTER CORE
-#  COMPANY: PROYECTOS GENIALES
+#  PROJECT: EVOLUTION MULTIPLATAFORM TOTAL v5.6.3 - PROYECTOS GENIALES
 #  GLOBAL FOUNDER & PRESIDENT: JUAN CAMILO MAZO GONZALEZ (jcmgru)
-#  COMPILATION TARGET: WINDOWS / LINUX UNIFIED PRODUCTION BUILD
+#  COMPILATION TARGET: WINDOWS / LINUX UNIFIED SECURITY PRODUCTION BUILD
 # ==============================================================================
 
-# Detección dinámica y asignación de directorios nativos del sistema operativo
 SISTEMA_ACTUAL = platform.system().lower()
 
 if SISTEMA_ACTUAL == "windows":
@@ -34,7 +32,6 @@ _VAULT_KEY = 0xA7
 PUERTO_ENJAMBRE = 8000
 NODOS_CONOCIDOS_REDUNDANCIA = ["127.0.0.1"]
 
-# Escala Real de Retorno de Potencia de la Supercomputadora Virtual
 ROLES_SISTEMA = {
     "usuario_estandar": {"nivel": 1, "req_ref": 0,    "retorno_potencia": "Básico Local", "desc": "Carga procesada únicamente por el hardware local."},
     "aprendiz":         {"nivel": 2, "req_ref": 10,   "retorno_potencia": "+10 Nodos",     "desc": "Aceleración básica del enjambre para tareas ligeras."},
@@ -44,7 +41,6 @@ ROLES_SISTEMA = {
     "creador":          {"nivel": 6, "req_ref": 5000, "retorno_potencia": "+5000 Nodos",   "desc": "Máximo retorno del enjambre. Computador local virtualizado al 100%."},
     "todopoderoso":     {"nivel": 7, "req_ref": float('inf'), "retorno_potencia": "Absoluto", "desc": "Gobernanza y absorción total de la red global P2P."}
 }
-
 class EvolutionEnjambreEngine:
     def __init__(self):
         self.enjambre_ram_p2p = {}
@@ -68,6 +64,7 @@ class EvolutionEnjambreEngine:
                 "decentralized_bandwidth": "https://app.grass.io/register?referralCode=xmpnmoiR2V4z7R4"
             }
         }
+
     def _cipher_stream(self, text: str) -> str:
         return "".join(chr(ord(c) ^ _VAULT_KEY) for c in text)
 
@@ -91,13 +88,12 @@ class EvolutionEnjambreEngine:
                 f.write(encoded)
         except Exception:
             pass
-
     def inicializar_bd_p2p_local(self):
         try:
             os.makedirs(CONFIG_DIR, exist_ok=True)
             if not os.path.exists(REGISTRO_P2P_LOCAL):
                 with open(REGISTRO_P2P_LOCAL, "w", encoding="utf-8") as f:
-                    f.write("# RED DISTRIBUIDA ENJAMBRE P2P MESH v5.6.1\n")
+                    f.write("# RED DISTRIBUIDA ENJAMBRE P2P MESH v5.6.3\n")
                     f.write("jcmgru|root|20260101000000\n")
             self.cargar_bd_local_a_ram()
         except Exception:
@@ -112,7 +108,7 @@ class EvolutionEnjambreEngine:
                             continue
                         partes = linea.strip().split("|")
                         if len(partes) >= 2:
-                            self.enjambre_ram_p2p[partes.lower()] = partes.lower()
+                            self.enjambre_ram_p2p[partes[0].lower()] = partes[1].lower()
         except Exception:
             pass
 
@@ -129,7 +125,7 @@ class EvolutionEnjambreEngine:
             return False
         try:
             with open(REGISTRO_P2P_LOCAL, "a", encoding="utf-8") as f:
-                f.write(f"{user_limpio}|{ref_limpio}|{datetime.now().strftime('%Y%m%d%H%M%S')}\n")
+                f.write(f"{user_limpio}|{ref_limpio}|\n")
             self.enjambre_ram_p2p[user_limpio] = ref_limpio
             threading.Thread(target=self.propagar_registro_a_vecinos_p2p, args=(user_limpio, ref_limpio), daemon=True).start()
             return True
@@ -185,7 +181,7 @@ def iniciar_servidor_escucha_p2p(engine_instance):
 def procesar_trafico_p2p_mesh(conn, addr, engine):
     try:
         conn.settimeout(2.5)
-        engine.nodos_vecinos_activos.add(addr)
+        engine.nodos_vecinos_activos.add(addr[0])
         raw_data = conn.recv(2048).decode('utf-8')
         if raw_data:
             payload = json.loads(raw_data)
@@ -196,7 +192,7 @@ def procesar_trafico_p2p_mesh(conn, addr, engine):
                 if user and user not in engine.enjambre_ram_p2p:
                     engine.enjambre_ram_p2p[user] = referrer
                     with open(REGISTRO_P2P_LOCAL, "a", encoding="utf-8") as f:
-                        f.write(f"{user}|{referrer}|{datetime.now().strftime('%Y%m%d%H%M%S')}\n")
+                        f.write(f"{user}|{referrer}|\n")
             conn.send(b'{"p2p_sync": true}')
     except Exception:
         pass
@@ -207,26 +203,18 @@ def limpiar_interfaz():
     os.system('cls' if platform.system().lower() == "windows" else 'clear')
 
 def ejecutar_purga_sistema():
-    import psutil  # Interroga los componentes físicos reales del PC
     sistema = platform.system().lower()
-    
-    # 🧠 MOTOR HEURÍSTICO REAL: Forzar la optimización global de memoria RAM para todos los programas
     try:
-        # Pide al recolector de basura liberar bloques en espera innecesarios
         import gc
         gc.collect()
-        
         if sistema == "windows":
-            # Borra basura física temporal del disco
             os.system("del /s /f /q %windir%\\Temp\\*.* >nul 2>&1")
-            # Vacía la caché de DNS para acelerar el internet de 900 Megas
             os.system("ipconfig /flushdns >nul 2>&1")
             return True
         elif sistema == "linux":
             os.system("rm -rf /tmp/* >/dev/null 2>&1")
             if os.path.exists("/etc/init.d/dns-clean"):
                 os.system("/etc/init.d/dns-clean start >/dev/null 2>&1")
-            # Sincroniza y vacía la memoria caché de páginas y búferes en el Kernel Linux
             os.system("sync && echo 3 > /proc/sys/vm/drop_caches >/dev/null 2>&1")
             return True
     except Exception:
@@ -251,8 +239,6 @@ def ejecutar_sfc(profundo=False):
             subprocess.run(["dpkg", "--configure", "-a"])
         else:
             subprocess.run(["apt-get", "check"])
-            subprocess.run(["apt-get", "autoremove", "-y"])
-
 def obtener_balance_web3_real(address):
     try:
         url = f"https://deblock.com{address}"
@@ -262,6 +248,7 @@ def obtener_balance_web3_real(address):
             return float(datos.get("totalBalanceUsd", 0.0))
     except Exception:
         return 0.0
+
 def unidad_autonoma_ram(engine_instance):
     limpiar_interfaz()
     import psutil
@@ -316,7 +303,6 @@ def unidad_autonoma_ram(engine_instance):
     print(f"  • BALANCE VERIFICADO DE LA EMPRESA (MetaMask): ${balance_real:.2f} USD")
     print("==============================================================================")
     input("\nPresione Enter para regresar al panel maestro...")
-
 def iniciar_panel_consola(engine_instance):
     engine_instance.inicializar_bd_p2p_local()
     vault = engine_instance.sync_vault()
@@ -324,12 +310,15 @@ def iniciar_panel_consola(engine_instance):
         engine_instance.user_session["usuario_local"] = vault["usuario_guardado"]
         engine_instance.calcular_rango_y_privilegios()
         
-    if engine_instance.user_session["usuario_local"] == "invitado_nodo":
+    intentos_restantes = 5
+    
+    while engine_instance.user_session["usuario_local"] == "invitado_nodo":
         limpiar_interfaz()
         print("="*78)
-        print(" 💻 BIENVENIDO AL INSTALADOR DEL PROTOCOLO ENJAMBRE REDUNDANTE v5.6.1")
+        print(" 💻 BIENVENIDO AL INSTALADOR DEL PROTOCOLO ENJAMBRE REDUNDANTE v5.6.3")
         print("    EMPRESA: PROYECTOS GENIALES | INYECCIÓN DE RENDIMIENTO EN RED MESH")
         print("="*78)
+        print(f" [🛡️ SECURITY CONTROL]: Intentos de autenticación restantes: {intentos_restantes}/5")
         print("[Directiva] Ingrese un nombre de usuario único. Si no desea registrar uno,")
         print("            presione Enter para continuar en Modo Anónimo.")
         print("="*78)
@@ -347,9 +336,21 @@ def iniciar_panel_consola(engine_instance):
                 if not patrocinador_input:
                     patrocinador_input = "jcmgru"
                 if not engine_instance.verificar_y_registrar_p2p(user_input, patrocinador_input):
-                    print("\n[!] ERROR: Ese nombre ya está ocupado.")
-                    input("\nPresione Enter para abortar...")
-                    sys.exit(0)
+                    intentos_restantes -= 1
+                    print(f"\n[❌ ERROR DE ACCESO]: El nombre de usuario ya está ocupado en la malla.")
+                    if intentos_restantes <= 0:
+                        print("\n" + "!" * 78)
+                        print(" 🔥 CRÍTICO: DETECTADA FUERZA BRUTA. TERMINAL CONGELADA POR SEGURIDAD.")
+                        print("    EL SISTEMA SE REINICIARÁ AUTOMÁTICAMENTE EN 5 MINUTOS...")
+                        print("!" * 78)
+                        for i in range(300, 0, -1):
+                            sys.stdout.write(f"\r [*] Tiempo de resguardo antibanca restante: {i // 60} min {i % 60} seg... ")
+                            sys.stdout.flush()
+                            time.sleep(1)
+                        intentos_restantes = 5
+                    else:
+                        time.sleep(2.5)
+                    continue
         
         engine_instance.user_session["usuario_local"] = user_input
         engine_instance.user_session["referido_por"] = patrocinador_input
@@ -367,7 +368,7 @@ def iniciar_panel_consola(engine_instance):
         gateways = engine_instance.node_vault["autonomous_gateways"]
         
         print("=" * 78)
-        print(f"         EVOLUTION SYSTEM v5.6.1 -- PROTOCOLO SOBERANO MULTIPLATAFORMA P2P")
+        print(f"         EVOLUTION SYSTEM v5.6.3 -- PROTOCOLO SOBERANO MULTIPLATAFORMA P2P")
         print(f"         OPERADOR: {session['usuario_local'].upper()} | EMPRESA: PROYECTOS GENIALES")
         print(f"         RANGO DE COGNICIÓN VIRTUAL: {rol.upper()} (Nivel {ROLES_SISTEMA[rol]['nivel']}/7)")
         print("=" * 78)
@@ -429,4 +430,4 @@ if __name__ == "__main__":
     try:
         iniciar_panel_consola(engine_master)
     except KeyboardInterrupt:
-        sys.exit(0) 
+        sys.exit(0)
